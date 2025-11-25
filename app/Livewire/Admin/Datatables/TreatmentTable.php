@@ -36,7 +36,7 @@ class TreatmentTable extends DataTableComponent
 
             Column::make('Acciones')
                 ->label(function ($row) {
-                    return view('treatments.actions', ['treatment' => $row]);
+                    return view('admin.treatments.actions', ['treatment' => $row]);
                 }),
         ];
     }
