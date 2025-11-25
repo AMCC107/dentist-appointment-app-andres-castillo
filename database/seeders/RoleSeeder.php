@@ -18,9 +18,7 @@ class RoleSeeder extends Seeder
             'Paciente',
             'Doctor',
             'Recepcionista',
-            'Administrador',
-            'Citas',
-            'Tratamientos',
+            'Administrador'
         ];
         //Crear en la BD
         foreach ($roles as $role){
