@@ -5,9 +5,25 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
+
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            $user = Auth::user();
+
+            if (!$user || !$user->roles()->where('id', 4)->exists()) {
+                return redirect('/');
+            }
+
+            return $next($request);
+        });
+    }
+
+
     public function index()
     {
         $users = User::paginate(10);

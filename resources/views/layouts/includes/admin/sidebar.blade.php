@@ -23,21 +23,25 @@ $links = [
         'icon' => 'fa-solid fa-tooth',
         'href' => route('treatments.index'),
         'active' => request()->routeIs('treatments.*'),
+        'can' => auth()->check() && auth()->user()->hasAnyRole(['Doctor', 'Administrador']),
     ],
     [
         'header' => 'Gestión',
+        'can' => auth()->check() && auth()->user()->hasAnyRole(['Administrador']),
     ],
     [
         'name' => 'Roles y permisos',
         'icon' => 'fa-solid fa-shield-halved',
         'href' => route('admin.roles.index'),
         'active' => request()->routeIs('admin.roles.*'),
+        'can' => auth()->check() && auth()->user()->hasRole('Administrador'),
     ],
     [
         'name' => 'Usuarios',
         'icon' => 'fa-solid fa-users',
         'href' => route('admin.users.index'),
         'active' => request()->routeIs('admin.users.*'),
+        'can' => auth()->check() && auth()->user()->hasRole('Administrador'),
     ],
 ];
 @endphp
@@ -51,6 +55,9 @@ $links = [
     <div class="h-full px-3 pb-4 overflow-y-auto bg-white dark:bg-gray-800">
         <ul class="space-y-2 font-medium">
             @foreach ($links as $link)
+                @if (isset($link['can']) && !$link['can'])
+                    @continue
+                @endif
                 <li>
                     @if(isset($link['header']))
                         <div class="px-2 py-2 text-xs font-semibold text-gray-500 uppercase">

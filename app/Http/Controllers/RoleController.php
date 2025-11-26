@@ -5,8 +5,23 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller as BaseController;
 use Illuminate\Http\Request;
 use App\Models\Role;
+use Illuminate\Support\Facades\Auth;
+
 class RoleController extends BaseController
 {
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            $user = Auth::user();
+
+            if (!$user || !$user->roles()->where('id', 4)->exists()) {
+                return redirect('/');
+            }
+
+            return $next($request);
+        });
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -29,7 +44,7 @@ class RoleController extends BaseController
      */
     public function store(Request $request)
     {
-        //Validar que se cree bien 
+        //Validar que se cree bien
         $request->validate(['name' => 'required|unique:roles,name']);
 
         //Si pasa la validación, creará el rol
@@ -37,8 +52,8 @@ class RoleController extends BaseController
             'name' => $request->name,
             'guard_name' => 'web'
         ]);
-        //Variable de un solo uso para alerta 
-        session()->flash('swal', 
+        //Variable de un solo uso para alerta
+        session()->flash('swal',
         [
             'icon' => 'success',
             'title' => 'Rol creado correctamente',
@@ -63,7 +78,7 @@ class RoleController extends BaseController
     {
         //Restringir la acción para los primeros 4 roles fijos
         if ($role->id <=4){
-            //Variable de un solo uso 
+            //Variable de un solo uso
             session()->flash('swal',[
                 'icon' => 'error',
                 'title' => 'Acción no permitida',
@@ -79,12 +94,12 @@ class RoleController extends BaseController
      */
     public function update(Request $request, Role $role)
     {
-        //Validar que se inserte bien 
+        //Validar que se inserte bien
         $request->validate(['name' => 'required|unique:roles,name,' . $role->id]);
 
         //Si el campo no cambió no actualices
         if ($role->name === $request->name) {
-            session()->flash('swal', 
+            session()->flash('swal',
             [
                 'icon' => 'info',
                 'title' => 'Sin cambios',
@@ -97,8 +112,8 @@ class RoleController extends BaseController
         $role->update([
             'name' => $request->name,
         ]);
-        //Variable de un solo uso para alerta 
-        session()->flash('swal', 
+        //Variable de un solo uso para alerta
+        session()->flash('swal',
         [
             'icon' => 'success',
             'title' => 'Rol creado correctamente',
@@ -115,7 +130,7 @@ class RoleController extends BaseController
     {
         //Restringir la acción para los primeros 4 roles fijos
         if ($role->id <=4){
-            //Variable de un solo uso 
+            //Variable de un solo uso
             session()->flash('swal',[
                 'icon' => 'error',
                 'title' => 'Acción no permitida',
@@ -123,11 +138,11 @@ class RoleController extends BaseController
             ]);
             return redirect()->route('admin.roles.index');
         }
-        //Borrar el elemento 
+        //Borrar el elemento
         $role->delete();
 
         //Alerta
-        session()->flash('swal', 
+        session()->flash('swal',
         [
             'icon' => 'success',
             'title' => 'Rol eliminado correctamente',

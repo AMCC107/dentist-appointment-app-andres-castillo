@@ -3,12 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Spatie\Permission\Traits\HasRoles; // <-- corregido
 
 class Patients extends Authenticatable
 {
     use HasFactory, HasRoles;
+    use SoftDeletes;
 
     protected $fillable = [
         'name',
@@ -19,8 +21,9 @@ class Patients extends Authenticatable
         'doctor_id',
     ];
 
-    protected $appends = [
-        'profile_photo_url',
-    ];
+    public function appointments()
+    {
+        return $this->hasMany(Appointment::class, 'paciente_id');
+    }
 
 }

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Spatie\Permission\Traits\HasRoles;
 
@@ -10,6 +11,7 @@ use Spatie\Permission\Traits\HasRoles;
 class Appointment extends Authenticatable
 {
     use HasFactory, HasRoles;
+    use SoftDeletes;
 
     protected $fillable = [
         'nombre',
@@ -19,12 +21,23 @@ class Appointment extends Authenticatable
         'tratamiento_id'
     ];
 
-
-    protected function creates(): array
+    // Relations
+    public function paciente()
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return $this->belongsTo(Patients::class, 'paciente_id');
     }
+
+    public function tratamiento()
+    {
+        return $this->belongsTo(Treatment::class, 'tratamiento_id');
+    }
+
+    public function doctor()
+    {
+        return $this->belongsTo(User::class, 'doctor_id')
+            ->whereHas('roles', function ($query) {
+                $query->where('id', 2);
+            });
+    }
+
 }

@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller as BaseController;
 use Illuminate\Http\Request;
 use App\Models\Appointment;
+use App\Models\Patients;
+use App\Models\Treatment;
+use App\Models\User;
 
 class AppointmentController extends BaseController
 {
@@ -22,7 +25,11 @@ class AppointmentController extends BaseController
      */
     public function create()
     {
-        return view('appointments.create');
+        $patients = Patients::all();
+        $treatments = Treatment::all();
+        $doctors = User::whereHas('roles', fn($query) => $query->where('id', 2))->get();
+
+        return view('appointments.create', compact('patients', 'treatments', 'doctors'));
     }
 
     /**
@@ -30,16 +37,19 @@ class AppointmentController extends BaseController
      */
     public function store(Request $request)
     {
-        //Validar que se cree bien
-        $request->validate(['name' => 'required']);
+        //Validación
+        $request->validate([
+            'nombre' => 'required',
+            'fecha_hora' => 'required|date',
+        ]);
 
-        //Si pasa la validación, creará el rol
+        //Crear cita
         Appointment::create([
-            'name' => $request->name,
+            'nombre' => $request->nombre,
             'fecha_hora' => $request->fecha_hora,
             'doctor_id' => $request->doctor_id,
             'paciente_id' => $request->paciente_id,
-            'tratamiento_id' => $request->tratamiento_id
+            'tratamiento_id' => $request->tratamiento_id,
         ]);
         //Variable de un solo uso para alerta
         session()->flash('swal',
@@ -57,87 +67,89 @@ class AppointmentController extends BaseController
      */
     public function show(string $id)
     {
-        //
+        $appointment = Appointment::withTrashed()->findOrFail($id);
+        return view('appointments.show', compact('appointment'));
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    // public function edit(Role $role)
-    // {
-    //     //Restringir la acción para los primeros 4 roles fijos
-    //     if ($role->id <=4){
-    //         //Variable de un solo uso
-    //         session()->flash('swal',[
-    //             'icon' => 'error',
-    //             'title' => 'Acción no permitida',
-    //             'text' => 'No puedes editar este rol.',
-    //         ]);
-    //         return redirect()->route('admin.roles.index');
-    //     }
-    //     return view('admin.roles.edit', compact('role'));
-    // }
+    public function edit(Appointment $appointment)
+    {
+        $patients = Patients::all();
+        $treatments = Treatment::all();
+        $doctors = User::whereHas('roles', fn($query) => $query->where('id', 2))->get();
 
-    // /**
-    //  * Update the specified resource in storage.
-    //  */
-    // public function update(Request $request, Role $role)
-    // {
-    //     //Validar que se inserte bien
-    //     $request->validate(['name' => 'required|unique:roles,name,' . $role->id]);
+        return view('appointments.edit', compact('appointment', 'patients', 'treatments', 'doctors'));
+    }
 
-    //     //Si el campo no cambió no actualices
-    //     if ($role->name === $request->name) {
-    //         session()->flash('swal',
-    //         [
-    //             'icon' => 'info',
-    //             'title' => 'Sin cambios',
-    //             'text' => 'No se detectaron modificaciones',
-    //         ]);
-    //         return redirect()->route('admin.roles.edit', $role);
-    //     }
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, Appointment $appointment)
+    {
+        $request->validate([
+            'nombre' => 'required',
+            'fecha_hora' => 'required|date',
+        ]);
 
-    //     //Si pasa la validación, creará el rol
-    //     $role->update([
-    //         'name' => $request->name,
-    //     ]);
-    //     //Variable de un solo uso para alerta
-    //     session()->flash('swal',
-    //     [
-    //         'icon' => 'success',
-    //         'title' => 'Rol creado correctamente',
-    //         'text' => 'El rol ha sido actualizado exitosamente',
-    //     ]);
-    //     //Redireccionará a la tabal principal
-    //     return redirect()->route('admin.roles.index', $role);
-    // }
+        $appointment->update([
+            'nombre' => $request->nombre,
+            'fecha_hora' => $request->fecha_hora,
+            'doctor_id' => $request->doctor_id,
+            'paciente_id' => $request->paciente_id,
+            'tratamiento_id' => $request->tratamiento_id,
+        ]);
 
-    // /**
-    //  * Remove the specified resource from storage.
-    //  */
-    // public function destroy(Role $role)
-    // {
-    //     //Restringir la acción para los primeros 4 roles fijos
-    //     if ($role->id <=4){
-    //         //Variable de un solo uso
-    //         session()->flash('swal',[
-    //             'icon' => 'error',
-    //             'title' => 'Acción no permitida',
-    //             'text' => 'No puedes eliminar este rol.',
-    //         ]);
-    //         return redirect()->route('admin.roles.index');
-    //     }
-    //     //Borrar el elemento
-    //     $role->delete();
+        session()->flash('swal', [
+            'icon' => 'success',
+            'title' => 'Cita actualizada correctamente',
+            'text' => 'La cita ha sido actualizada exitosamente',
+        ]);
+        return redirect()->route('appointments.index');
+    }
 
-    //     //Alerta
-    //     session()->flash('swal',
-    //     [
-    //         'icon' => 'success',
-    //         'title' => 'Rol eliminado correctamente',
-    //         'text' => 'El rol ha sido eliminado exitosamente',
-    //     ]);
-    //     //Redireccionar al mismo lugar
-    //     return redirect()->route('admin.roles.index');
-    // }
+    /**
+     * Soft delete (marca con deleted_at) — ruta: appointments.delete
+     */
+    public function delete(Appointment $appointment)
+    {
+        $appointment->delete();
+        session()->flash('swal', [
+            'icon' => 'success',
+            'title' => 'Cita eliminada (soft)',
+            'text' => 'La cita fue marcada como eliminada',
+        ]);
+        return redirect()->route('appointments.index');
+    }
+
+    /**
+     * Permanently remove the specified resource from storage.
+     */
+    public function destroy(Appointment $appointment)
+    {
+        $appointment->forceDelete();
+        session()->flash('swal', [
+            'icon' => 'success',
+            'title' => 'Cita eliminada permanentemente',
+            'text' => 'La cita fue eliminada permanentemente',
+        ]);
+        return redirect()->route('appointments.index');
+    }
+
+    /**
+     * Restore a soft-deleted appointment.
+     */
+    public function restore($id)
+    {
+        $appointment = Appointment::withTrashed()->findOrFail($id);
+        $appointment->restore();
+        session()->flash('swal', [
+            'icon' => 'success',
+            'title' => 'Cita restaurada',
+            'text' => 'La cita fue restaurada exitosamente',
+        ]);
+        return redirect()->route('appointments.index');
+    }
+
 }

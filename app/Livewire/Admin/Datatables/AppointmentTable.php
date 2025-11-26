@@ -8,10 +8,22 @@ use App\Models\Appointment;
 use App\Models\Patients;
 use App\Models\Treatment;
 use App\Models\User;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 
 class AppointmentTable extends DataTableComponent
 {
     protected $model = Appointment::class;
+
+    public function builder(): Builder
+    {
+        return Appointment::query()
+            ->with([
+                'paciente:id,name',
+                'tratamiento:id,nombre',
+                'doctor:id,name',
+            ]);
+    }
 
     public function configure(): void
     {
@@ -21,41 +33,30 @@ class AppointmentTable extends DataTableComponent
     public function columns(): array
     {
         return [
-            Column::make('Id', 'id')
+            Column::make('Id','id')
                 ->sortable(),
 
-            Column::make('Nombre', 'nombre')
+            Column::make('Nombre','nombre')
                 ->sortable()
                 ->searchable(),
 
-            Column::make('Fecha', 'fecha_hora')
+            Column::make('Fecha','fecha_hora')
                 ->sortable()
-                ->format(function ($value) {
-                    return optional($value)->format('d/m/Y H:i');
-                }),
+                ->format(fn($value) => $value
+                    ? ($value instanceof Carbon ? $value : Carbon::parse($value))->format('d/m/Y H:i')
+                    : ''),
 
-            Column::make('Paciente', 'paciente_id')
-                ->label(function ($row) {
-                    $p = Patients::find($row->paciente_id);
-                    return $p ? $p->name : $row->paciente_id;
-                }),
+            Column::make('Paciente','paciente_id')
+                ->format(fn($value, $row) => optional($row->paciente)->name ?? ''),
 
-            Column::make('Tratamiento', 'tratamiento_id')
-                ->label(function ($row) {
-                    $t = Treatment::find($row->tratamiento_id);
-                    return $t ? $t->nombre : $row->tratamiento_id;
-                }),
+            Column::make('Tratamiento','tratamiento_id')
+                ->format(fn($value, $row) => optional($row->tratamiento)->nombre ?? ''),
 
-            Column::make('Doctor', 'doctor_id')
-                ->label(function ($row) {
-                    $d = User::find($row->doctor_id);
-                    return $d ? $d->name : $row->doctor_id;
-                }),
+            Column::make('Doctor','doctor_id')
+                ->format(fn($value, $row) => optional($row->doctor)->name ?? ''),
 
             Column::make('Acciones')
-                ->label(function ($row) {
-                    return view('admin.appointments.actions', ['appointment' => $row]);
-                }),
+                ->label(fn($row) => view('admin.appointments.actions', ['appointment' => $row])),
         ];
     }
 }
