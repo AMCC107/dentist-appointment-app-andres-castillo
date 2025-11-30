@@ -6,9 +6,24 @@ use App\Http\Controllers\Controller;
 use App\Models\Patients;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class PatientsController extends Controller
 {
+
+    public function __construct() 
+    {
+        $this->middleware(function ($request, $next) {
+            $user = Auth::user();
+
+            if (!$user || !$user->roles()->whereIn('id', [2,3,4])->exists()) {
+                return redirect('/');
+            }
+
+            return $next($request);
+        });
+    }
+
     public function index()
     {
         return view('patients.index');

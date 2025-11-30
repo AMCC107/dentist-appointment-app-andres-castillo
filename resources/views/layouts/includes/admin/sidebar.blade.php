@@ -11,6 +11,7 @@ $links = [
         'icon' => 'fa-solid fa-hospital-user',
         'href' => route('patients.index'),
         'active' => request()->routeIs('patients.*'),
+        'can' => auth()->check() && auth()->user()->hasAnyRole(['Doctor', 'Recepcionista','Administrador']),
     ],
     [
         'name' => 'Citas',
